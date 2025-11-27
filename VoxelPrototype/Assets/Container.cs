@@ -10,8 +10,7 @@ using UnityEngine;
 public class Container : MonoBehaviour
 {
     public Vector3 containerPosition;
-
-    private Dictionary<Vector3, Voxel> data;
+    private Dictionary<Vector3, VoxelScript> data;
     private MeshData meshData = new MeshData();
 
     private MeshRenderer meshRenderer;
@@ -21,7 +20,7 @@ public class Container : MonoBehaviour
     public void Initialize(Material mat, Vector3 position)
     {
         ConfigureComponents();
-        data = new Dictionary<Vector3, Voxel>();
+        data = new Dictionary<Vector3, VoxelScript>();
         meshRenderer.sharedMaterial = mat;
         containerPosition = position;
     }
@@ -43,15 +42,15 @@ public class Container : MonoBehaviour
         meshData.ClearData();
 
         Vector3 blockPos;
-        Voxel block;
+        VoxelScript block;
 
         int counter = 0;
         Vector3[] faceVertices = new Vector3[4];
         Vector2[] faceUVs = new Vector2[4];
 
-        foreach (KeyValuePair<Vector3, Voxel> kvp in data)
+        foreach (KeyValuePair<Vector3, VoxelScript> kvp in data)
         {
-            if (!kvp.Value.isSolid)
+            if (!kvp.Value._isactive)
                 continue;
 
             blockPos = kvp.Key;
@@ -60,12 +59,9 @@ public class Container : MonoBehaviour
             //Iterate over each face direction
             for (int i = 0; i < 6; i++)
             {
-                if (this[blockPos + voxelFaceChecks[i]].isSolid)
+                if (this[blockPos + voxelFaceChecks[i]]._isactive)
                     continue;
 
-                //Draw this face
-
-                //Collect the appropriate vertices from the default vertices and add the block position
                 for (int j = 0; j < 4; j++)
                 {
                     faceVertices[j] = voxelVertices[voxelVertexIndex[i, j]] + blockPos;
@@ -97,7 +93,7 @@ public class Container : MonoBehaviour
 
     }
 
-    public Voxel this[Vector3 index]
+    public VoxelScript this[Vector3 index]
     {
         get
         {
@@ -116,7 +112,7 @@ public class Container : MonoBehaviour
         }
     }
 
-    public static Voxel emptyVoxel = new Voxel() { ID = 0 };
+    public static VoxelScript emptyVoxel = new VoxelScript() { ID = 0 };
 
     #region Mesh Data
 

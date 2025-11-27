@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+[RequireComponent(typeof(MeshRenderer))]
 public class SphereMaker : MonoBehaviour
 {
     public Material sphereMaterial;
@@ -18,42 +18,21 @@ public class SphereMaker : MonoBehaviour
     private Mesh mesh;
     private float[,,] heights;
 
-    private MeshFilter meshFilter;
-
     void Start()
     {
         radiusSphere = 8.5f;
         gridWidth = 16;
         gridHeight = 16;
-        meshFilter = GetComponent<MeshFilter>();
-        /*StartCoroutine(TestAll());
-        TestAll();*/
         GenerateVoxels();
         MarchCubes();
         SetMesh();
     }
-
-    /*void Update()
-    {
-
-    }
-
-    private IEnumerator TestAll()
-    {
-        while (true)
-        {
-            GenerateVoxels();
-            MarchCubes();
-            SetMesh();
-        }
-    }*/
 
     private void SetMesh()
     {
         if (mesh == null)
         {
             mesh = new Mesh();
-            meshFilter.mesh = mesh;
         }
 
         mesh.Clear();
@@ -63,41 +42,66 @@ public class SphereMaker : MonoBehaviour
 
     private void GenerateVoxels()
     {
+        // Destroy old container if it exists
         if (container != null)
         {
             Destroy(container.gameObject);
         }
-
+        Vector3 centerSphere = new Vector3(radiusSphere - 1, radiusSphere - 1, radiusSphere - 1);
+        // Create a new container GameObject
         GameObject sphereContainer = new GameObject("Container");
         sphereContainer.transform.parent = transform;
         container = sphereContainer.AddComponent<Container>();
-        container.Initialize(sphereMaterial, Vector3.zero);
+        container.Initialize(sphereMaterial, centerSphere);
 
-        Vector3 centerSphere = new Vector3(radiusSphere-1, radiusSphere-1, radiusSphere-1);
+        
 
-        for (int x = 0; x < (radiusSphere * 2); x++)
+        // Loop through voxel positions
+        for (int x = 0; x < radiusSphere * 2; x++)
         {
-            for (int y = 0; y < (radiusSphere * 2); y++)
+            for (int y = 0; y < radiusSphere * 2; y++)
             {
-                for (int z = 0; z < (radiusSphere * 2); z++)
+                for (int z = 0; z < radiusSphere * 2; z++)
                 {
+                    // Offset so sphere is centered
                     Vector3 voxelPosition = new Vector3(x, y, z);
+
+                    // Check if inside sphere radius
                     if (Vector3.Distance(voxelPosition, centerSphere) <= radiusSphere)
                     {
+                        // Bounds check
                         if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight && z >= 0 && z < gridWidth)
                         {
-                            container[voxelPosition] = new Voxel { ID = 1 };
+                            // Create voxel GameObject
+                            GameObject voxelGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                            voxelGO.transform.parent = sphereContainer.transform;
+                            voxelGO.transform.localPosition = voxelPosition;
+
+                            // Assign material
+                            Renderer renderer = voxelGO.GetComponent<Renderer>();
+                            if (renderer != null)
+                            {
+                                renderer.material = sphereMaterial;
+                            }
+
+                            // Attach VoxelScript
+                            VoxelScript voxel = voxelGO.AddComponent<VoxelScript>();
+                            voxel.ID = 1;
+                            voxel.SetPosition(voxelPosition);
+
+                            // Store in container
+                            container[voxelPosition] = voxel;
                         }
-                        
                     }
                 }
             }
         }
 
+        // If your container builds a mesh from voxels, keep these
         container.GenerateMesh();
         container.UploadMesh();
     }
-    
+
 
     private void MarchCubes()
     {
@@ -183,7 +187,7 @@ public class SphereMaker : MonoBehaviour
                 for (int z = 0; z < gridWidth + 1; z++)
                 {
                     Gizmos.color = new Color(heights[x, y, z], heights[x, y, z], heights[x, y, z], 1);
-                    Gizmos.DrawSphere(new Vector3(x , y , z), 0.1f);
+                    Gizmos.DrawSphere(new Vector3(x - 0.5f , y - 0.5f, z - 0.5f), 0.1f);
                 }
             }
         }
