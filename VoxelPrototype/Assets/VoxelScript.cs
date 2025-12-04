@@ -43,6 +43,7 @@ public class VoxelScript : MonoBehaviour
     public void SetActive(bool active)
     {
         _isactive = active;
+        _renderer = GetComponent<Renderer>();
         _renderer.enabled = active;
     }
 }
