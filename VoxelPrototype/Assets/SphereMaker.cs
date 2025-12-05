@@ -74,7 +74,7 @@ public class SphereMaker : MonoBehaviour
                     renderer.material = sphereMaterial;
                     VoxelScript voxel = newVoxel.AddComponent<VoxelScript>();
                     voxel.SetPosition(voxelPosition);
-                    voxel.SetActive(false);
+                    voxel.SetActive(true);
                     iz++;
                     voxels[ix,iy,iz] = voxel;
                 }
