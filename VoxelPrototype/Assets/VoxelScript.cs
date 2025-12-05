@@ -6,7 +6,7 @@ using UnityEngine.InputSystem.LowLevel;
 public class VoxelScript : MonoBehaviour
 {
     float width = 1f;
-    public bool _isactive = true;
+    public bool _isactive = false;
     Renderer _renderer;
     public byte ID;
 
