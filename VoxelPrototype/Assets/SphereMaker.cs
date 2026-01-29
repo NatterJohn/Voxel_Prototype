@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
@@ -9,15 +10,15 @@ public class SphereMaker : MonoBehaviour
 
     private Container container;
     //[SerializeField] bool behindTheScenes = false;
-    [SerializeField] float radiusSphere;
+    float radiusSphere = 6;
     /// <summary>
     /// This is the width in units of all the voxels
     /// </summary>
-    [SerializeField] int gridWidthActual;
+    int gridWidthActual = 15;
     /// <summary>
     /// The number of voxels in a gridWidthActual
     /// </summary>
-    [SerializeField] int voxelResolution;
+    int voxelResolution = 15;
     //[SerializeField] int gridWidth;
     //[SerializeField] int gridHeight;
     private float heightTreshold = 0.5f;
@@ -37,7 +38,7 @@ public class SphereMaker : MonoBehaviour
         gridHeight = 16;*/
         
         GenerateVoxels(gridWidthActual,voxelResolution);
-        CreateSphere(Vector3.zero, radiusSphere, voxelResolution+1);
+        CreateSphere(Vector3.zero, radiusSphere);
       //  MarchCubes();
       //  SetMesh();
     }
@@ -57,15 +58,14 @@ public class SphereMaker : MonoBehaviour
     private void GenerateVoxels(int gridWidthActual, int voxelResolution)
     {
         float voxelWidth = gridWidthActual / voxelResolution;
-        voxels = new VoxelScript[voxelResolution + 1, voxelResolution + 1, voxelResolution + 1];
-        int ix=0, iy=0, iz=0;
-        for (float x = -gridWidthActual / 2; x < gridWidthActual / 2; x += voxelWidth)
-        {
-            for (float y = -gridWidthActual / 2; y < gridWidthActual / 2; y += voxelWidth)
-            {
-                for (float z = -gridWidthActual / 2; z < gridWidthActual / 2; z += voxelWidth)
-                {
-                    Vector3 voxelPosition = new Vector3(x, y, z);
+        voxels = new VoxelScript[voxelResolution + 2, voxelResolution + 2, voxelResolution + 2];
+        
+
+        for (int ix = 0; ix < voxelResolution; ix++)
+            for (int iy = 0; iy < voxelResolution; iy++)
+                for (int iz = 0; iz < voxelResolution; iz++)
+                { 
+                    Vector3 voxelPosition = voxelPositionFromIndex(ix, iy, iz);
                     GameObject newVoxel = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     Collider col =newVoxel.GetComponent<Collider>();
                     Destroy(col);
@@ -75,31 +75,37 @@ public class SphereMaker : MonoBehaviour
                     VoxelScript voxel = newVoxel.AddComponent<VoxelScript>();
                     voxel.SetPosition(voxelPosition);
                     voxel.SetActive(true);
-                    iz++;
                     voxels[ix,iy,iz] = voxel;
+                    print(ix.ToString() + iy.ToString() + iz.ToString());
                 }
-                iy++;
-                iz = 0;
-            }
-            ix++;
-            iy = 0;
-        }
+              
+            
+           
+        
     }
 
-    void CreateSphere(Vector3 pos, float radius, int vRes)
+    private Vector3 voxelPositionFromIndex(int ix, int iy, int iz)
     {
+        float voxelWidth = gridWidthActual / voxelResolution;
+        return new Vector3( -(voxelResolution - 1f)/2f + ((float) ix * voxelWidth), -(voxelResolution - 1f) / 2f + ((float)iy * voxelWidth), -(voxelResolution - 1f) / 2f + ((float)iz * voxelWidth) );
+    }
+
+    void CreateSphere(Vector3 pos, float radius)
+    {
+        
         // Loop through each possible voxel position
-        for (int x = 0; x < voxels.GetLength(0); x++)
+        for (int x = 0; x < voxelResolution; x++)
         {
-            for (int y = 0; y < voxels.GetLength(1); y++)
+            for (int y = 0; y < voxelResolution; y++)
             {
-                for (int z = 0; z < voxels.GetLength(2); z++)
+                for (int z = 0; z < voxelResolution; z++)
                 {
                     VoxelScript voxel = voxels[x, y, z];
                     if (voxel == null) continue;
 
                     // Check if the voxel position is inside the sphere radius
                     float distance = Vector3.Distance(voxel.transform.position, pos);
+                    print(distance.ToString());
                     if (distance <= radius)
                     {
                         voxel.SetActive(true);
