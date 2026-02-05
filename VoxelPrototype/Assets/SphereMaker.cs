@@ -14,11 +14,11 @@ public class SphereMaker : MonoBehaviour
     /// <summary>
     /// This is the width in units of all the voxels
     /// </summary>
-    int gridWidthActual = 15;
+    float gridWidthActual = 15;
     /// <summary>
     /// The number of voxels in a gridWidthActual
     /// </summary>
-    int voxelResolution = 15;
+    float voxelResolution = 25;
     //[SerializeField] int gridWidth;
     //[SerializeField] int gridHeight;
     private float heightTreshold = 0.5f;
@@ -55,10 +55,10 @@ public class SphereMaker : MonoBehaviour
         mesh.SetTriangles(triangles, 0);
     }
 
-    private void GenerateVoxels(int gridWidthActual, int voxelResolution)
+    private void GenerateVoxels(float gridWidthActual, float voxelResolution)
     {
         float voxelWidth = gridWidthActual / voxelResolution;
-        voxels = new VoxelScript[voxelResolution + 2, voxelResolution + 2, voxelResolution + 2];
+        voxels = new VoxelScript[(int)voxelResolution + 2, (int)voxelResolution + 2, (int)voxelResolution + 2];
         
 
         for (int ix = 0; ix < voxelResolution; ix++)
@@ -87,7 +87,7 @@ public class SphereMaker : MonoBehaviour
     private Vector3 voxelPositionFromIndex(int ix, int iy, int iz)
     {
         float voxelWidth = gridWidthActual / voxelResolution;
-        return new Vector3( -(voxelResolution - 1f)/2f + ((float) ix * voxelWidth), -(voxelResolution - 1f) / 2f + ((float)iy * voxelWidth), -(voxelResolution - 1f) / 2f + ((float)iz * voxelWidth) );
+        return new Vector3( -(gridWidthActual - 1f)/2f + ((float) ix * voxelWidth), -(gridWidthActual - 1f) / 2f + ((float)iy * voxelWidth), -(gridWidthActual - 1f) / 2f + ((float)iz * voxelWidth) );
     }
 
     void CreateSphere(Vector3 pos, float radius)
