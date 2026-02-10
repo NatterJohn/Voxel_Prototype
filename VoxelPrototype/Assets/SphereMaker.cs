@@ -8,7 +8,7 @@ public class SphereMaker : MonoBehaviour
 {
     public Material sphereMaterial;
 
-    private Container container;
+    
     //[SerializeField] bool behindTheScenes = false;
     float radiusSphere = 6;
     /// <summary>
@@ -39,8 +39,8 @@ public class SphereMaker : MonoBehaviour
         
         GenerateVoxels(gridWidthActual,voxelResolution);
         CreateSphere(Vector3.zero, radiusSphere);
-      //  MarchCubes();
-      //  SetMesh();
+        MarchCubes();
+        SetMesh();
     }
 
     private void SetMesh()
@@ -118,83 +118,63 @@ public class SphereMaker : MonoBehaviour
             }
         }
     }
-    //            if (container != null)
-    //    {
-    //        Destroy(container.gameObject);
-    //    }
-    //Vector3 centerSphere = new Vector3(radiusSphere - 1, radiusSphere - 1, radiusSphere - 1);
-    //GameObject sphereContainer = new GameObject("Container");
-    //sphereContainer.transform.parent = transform;
-    //container = sphereContainer.AddComponent<Container>();
-    //container.Initialize(sphereMaterial, centerSphere);
 
-
-
-    //// Loop through each possible voxel position
-    //for (int x = 0; x < radiusSphere * 2; x++)
-    //{
-    //    for (int y = 0; y < radiusSphere * 2; y++)
-    //    {
-    //        for (int z = 0; z < radiusSphere * 2; z++)
-    //        {
-    //            Vector3 voxelPosition = new Vector3(x, y, z);
-    //            // Check if the voxel position is inside the sphere radius
-    //            if (Vector3.Distance(voxelPosition, centerSphere) <= radiusSphere)
-    //            {
-    //                // Check if the voxel is within the voxel space
-    //                if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight && z >= 0 && z < gridWidth)
-    //                {
-    //                    // Create the voxel
-    //                    GameObject newVoxel = GameObject.CreatePrimitive(PrimitiveType.Cube);
-    //                    Renderer renderer = newVoxel.GetComponent<Renderer>();
-    //                    renderer.material = sphereMaterial;
-    //                    VoxelScript voxel = newVoxel.AddComponent<VoxelScript>();
-    //                    voxel.SetPosition(voxelPosition);
-    //                    container[voxelPosition] = voxel;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-    /*private void MarchCubes()
+    /// <summary>
+    /// Iterates through the entire 3D grid to generate the procedural mesh.
+    /// </summary>
+    private void MarchCubes()
     {
+        // Reset mesh data before rebuilding
         vertices.Clear();
         triangles.Clear();
-       // heights = new float[gridWidthActual + 1, gridWidthActual + 1, gridWidthActual + 1];
+
+        // Loop through each voxel in the 3D grid
         for (int x = 0; x < gridWidthActual; x++)
         {
             for (int y = 0; y < gridWidthActual; y++)
             {
                 for (int z = 0; z < gridWidthActual; z++)
                 {
-                    float[] cubeCorners = new float[8];
+                    // Retrieve the specific voxel and its 8 corner positions
+                    VoxelScript voxel = voxels[x, y, z];
+                    List<Vector3> cubeCorners = voxel.GetCorners();
 
+                    // (Optional/Debug) Calculate world-space corner coordinates 
                     for (int i = 0; i < 8; i++)
                     {
                         Vector3Int corner = new Vector3Int(x, y, z) + MarchingTable.Corners[i];
-                    //    cubeCorners[i] = heights[corner.x, corner.y, corner.z];
                     }
 
+                    // Process this individual cube to find and create triangles
                     MarchCube(new Vector3(x, y, z), cubeCorners);
                 }
             }
         }
     }
-    private int GetConfigIndex(float[] cubeCorners)
+
+    /// <summary>
+    /// Creates an 8-bit index representing which corners are "inside" the mesh.
+    /// </summary>
+    private int GetConfigIndex(List<Vector3> cubeCorners)
     {
         int configIndex = 0;
 
         for (int i = 0; i < 8; i++)
         {
-            if (cubeCorners[i] > heightTreshold)
+            if (cubeCorners[i].y > heightTreshold)
             {
+                // Use bitwise OR to set the i-th bit to 1
                 configIndex |= 1 << i;
             }
         }
 
         return configIndex;
     }
-    private void MarchCube(Vector3 position, float[] cubeCorners)
+
+    /// <summary>
+    /// Triangulates a single cube based on its corner configuration.
+    /// </summary>
+    private void MarchCube(Vector3 position, List<Vector3> cubeCorners)
     {
         int configIndex = GetConfigIndex(cubeCorners);
 
@@ -208,43 +188,29 @@ public class SphereMaker : MonoBehaviour
         {
             for (int v = 0; v < 3; v++)
             {
+                // Get the edge ID from the lookup table
                 int triTableValue = MarchingTable.Triangles[configIndex, edgeIndex];
 
+                // -1 indicates there are no more triangles to draw for this configuration
                 if (triTableValue == -1)
                 {
                     return;
                 }
 
+                // Identify the two corners that form the edge where the vertex will be placed
                 Vector3 edgeStart = position + MarchingTable.Edges[triTableValue, 0];
                 Vector3 edgeEnd = position + MarchingTable.Edges[triTableValue, 1];
 
+                // Calculate the midpoint of the edge to place the vertex
                 Vector3 vertex = (edgeStart + edgeEnd) / 2;
 
+                // Add the calculated vertex to the mesh list
                 vertices.Add(vertex);
+                // Add the index to the triangle list (winding order is handled by the table)
                 triangles.Add(vertices.Count - 1);
 
                 edgeIndex++;
             }
         }
-    }*/
-    /*private void OnDrawGizmosSelected()
-    {
-        if (!behindTheScenes || !Application.isPlaying)
-        {
-            return;
-        }
-
-        for (float x = -gridWidthActual / 2; x < gridWidthActual / 2; x += voxelWidth)
-        {
-            for (float y = -gridWidthActual / 2; y < gridWidthActual / 2; y += voxelWidth)
-            {
-                for (float z = -gridWidthActual / 2; z < gridWidthActual / 2; z += voxelWidth)
-                {
-                    gridPoints = new float[gridWidthActual + 1, gridWidthActual + 1, gridWidthActual + 1];
-                    Gizmos.color = new Color(gridPoints[x, y, z], gridPoints[x, y, z], gridPoints[x, y, z], 1);
-                    Gizmos.DrawSphere(new Vector3(x - 0.5f , y - 0.5f, z - 0.5f), 0.1f);
-                }
-            }
-        }
-    }*/
+    }
 }
