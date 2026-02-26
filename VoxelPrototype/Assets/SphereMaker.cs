@@ -24,7 +24,7 @@ public class SphereMaker : MonoBehaviour
     private float heightTreshold = 0.5f;
     private float[,,] gridPoints;
     
-
+    Vector3 centreSphere = Vector3.zero;
     private List<Vector3> vertices = new List<Vector3>();
     private List<int> triangles = new List<int>();
     private Mesh mesh;
@@ -38,9 +38,10 @@ public class SphereMaker : MonoBehaviour
         gridHeight = 16;*/
         
         GenerateVoxels(gridWidthActual,voxelResolution);
-        CreateSphere(Vector3.zero, radiusSphere);
+        CreateSphere(centreSphere, radiusSphere);
         MarchCubes();
         SetMesh();
+        CreateUnityGameObject();
     }
 
     private void SetMesh()
@@ -111,6 +112,28 @@ public class SphereMaker : MonoBehaviour
             }
         }
     }
+    public GameObject CreateUnityGameObject()
+    {
+        // Create the GameObject
+        GameObject MarchedSphere = new GameObject("MarchingCubesMesh");
+
+        // Add components
+        MeshFilter meshFilter = MarchedSphere.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = MarchedSphere.AddComponent<MeshRenderer>();
+
+        // Assign the mesh you built earlier
+        meshFilter.mesh = mesh;
+
+        // Assign material
+        meshRenderer.material = sphereMaterial;
+
+        // Optional: add collider
+        MeshCollider meshCollider = MarchedSphere.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = mesh;
+
+        return MarchedSphere;
+    }
+
 
     private void MarchCubes()
     {
@@ -143,11 +166,12 @@ public class SphereMaker : MonoBehaviour
 
         for (int i = 0; i < 8; i++)
         {
-            if (cubeCorners[i].y > heightTreshold)
+            if (Vector3.Distance(cubeCorners[i], centreSphere) > radiusSphere)
             {
                 // Use bitwise OR to set the i-th bit to 1
                 configIndex |= 1 << i;
             }
+            
         }
 
         return configIndex;

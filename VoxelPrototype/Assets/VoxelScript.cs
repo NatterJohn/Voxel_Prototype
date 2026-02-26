@@ -29,14 +29,15 @@ public class VoxelScript : MonoBehaviour
     {
         List<Vector3> result = new List<Vector3>();
         float hW = width / 2;
-        result.Add(transform.position + new Vector3(-hW, hW, hW));
-        result.Add(transform.position + new Vector3(hW, hW, hW));
-        result.Add(transform.position + new Vector3(-hW, -hW, hW));
-        result.Add(transform.position + new Vector3(hW, -hW, hW));
-        result.Add(transform.position + new Vector3(-hW, hW, -hW));
-        result.Add(transform.position + new Vector3(hW, hW, -hW));
-        result.Add(transform.position + new Vector3(-hW, -hW, -hW));
-        result.Add(transform.position + new Vector3(hW, -hW, -hW));
+        result.Add(transform.position + new Vector3(-hW, -hW, -hW)); //Bottom Left Front
+        result.Add(transform.position + new Vector3(hW, -hW, -hW)); // Bottom Right Front
+        result.Add(transform.position + new Vector3(hW, hW, -hW));  // Top Right Front
+        result.Add(transform.position + new Vector3(-hW, hW, -hW));   // Top Left Front
+        result.Add(transform.position + new Vector3(-hW, -hW, hW)); //Bottom Left Back
+        result.Add(transform.position + new Vector3(hW, -hW, hW)); // Bottom Right Back
+        result.Add(transform.position + new Vector3(hW, hW, hW));  // Top Right Back
+        result.Add(transform.position + new Vector3(-hW, hW, hW));   // Top Left Back
+
         return result;
 
     }
