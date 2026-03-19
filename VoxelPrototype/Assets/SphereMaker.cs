@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [RequireComponent(typeof(MeshRenderer))]
 public class SphereMaker : MonoBehaviour
 {
     public Material sphereMaterial;
-
+    GameObject marchCube;
     
     //[SerializeField] bool behindTheScenes = false;
     float radiusSphere = 6;
@@ -29,7 +30,7 @@ public class SphereMaker : MonoBehaviour
     private List<int> triangles = new List<int>();
     private Mesh mesh;
     public VoxelScript[,,] voxels;
-
+    int intIndex = 1;
 
     void Start()
     {
@@ -37,13 +38,29 @@ public class SphereMaker : MonoBehaviour
         gridWidth = 16;
         gridHeight = 16;*/
         
-        GenerateVoxels(gridWidthActual,voxelResolution);
-        CreateSphere(centreSphere, radiusSphere);
-        MarchCubes();
-        SetMesh();
-        CreateUnityGameObject();
-    }
+        //GenerateVoxels(gridWidthActual,voxelResolution);
+        //CreateSphere(centreSphere, radiusSphere);
+        //MarchCubes();
+        
+        //SetMesh();
+        //CreateUnityGameObject();
 
+    }
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0)) {
+            print("gameobject for index " + intIndex.ToString());
+            vertices = new List<Vector3>();
+            triangles = new List<int>();
+            testMarchCube(intIndex);
+            intIndex += 1;
+            SetMesh();
+            if (marchCube != null) { 
+                Destroy(marchCube);
+            }
+            marchCube = CreateUnityGameObject();
+        }   
+    }
     private void SetMesh()
     {
         if (mesh == null)
@@ -166,7 +183,7 @@ public class SphereMaker : MonoBehaviour
 
         for (int i = 0; i < 8; i++)
         {
-            if (Vector3.Distance(cubeCorners[i], centreSphere) > radiusSphere)
+            if (Vector3.Distance(cubeCorners[i], centreSphere) < radiusSphere)
             {
                 // Use bitwise OR to set the i-th bit to 1
                 configIndex |= 1 << i;
@@ -200,6 +217,32 @@ public class SphereMaker : MonoBehaviour
 
                 Vector3 edgeStart = position + MarchingTable.Edges[triTableValue, 0];
                 Vector3 edgeEnd = position + MarchingTable.Edges[triTableValue, 1];
+
+                Vector3 vertex = (edgeStart + edgeEnd) / 2;
+
+                vertices.Add(vertex);
+                triangles.Add(vertices.Count - 1);
+
+                edgeIndex++;
+            }
+        }
+    }
+    private void testMarchCube(int i)
+    {
+        int edgeIndex = 0;
+        for (int t = 0; t < 5; t++)
+        {
+            for (int v = 0; v < 3; v++)
+            {
+                int triTableValue = MarchingTable.Triangles[i, edgeIndex];
+
+                if (triTableValue == -1)
+                {
+                    return;
+                }
+
+                Vector3 edgeStart = MarchingTable.Edges[triTableValue, 0];
+                Vector3 edgeEnd = MarchingTable.Edges[triTableValue, 1];
 
                 Vector3 vertex = (edgeStart + edgeEnd) / 2;
 
