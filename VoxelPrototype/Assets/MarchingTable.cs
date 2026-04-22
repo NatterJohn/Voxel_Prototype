@@ -1,23 +1,39 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public static class MarchingTable
 {
-    public static Vector3Int[] Corners = new Vector3Int[8] {
-
-        new Vector3Int(0, 0, 0),
-        new Vector3Int(1, 0, 0),
-        new Vector3Int(1, 1, 0),
-        new Vector3Int(0, 1, 0),
-        new Vector3Int(0, 0, 1),
-        new Vector3Int(1, 0, 1),
-        new Vector3Int(1, 1, 1),
-        new Vector3Int(0, 1, 1)
-
+    public static readonly Vector3Int[] Corners = new Vector3Int[8]
+    {
+        new Vector3Int(0,0,0),
+        new Vector3Int(1,0,0),
+        new Vector3Int(1,1,0),
+        new Vector3Int(0,1,0),
+        new Vector3Int(0,0,1),
+        new Vector3Int(1,0,1),
+        new Vector3Int(1,1,1),
+        new Vector3Int(0,1,1)
     };
 
-    public static Vector3[,] Edges = new Vector3[12, 2] {
+    // Edge → corner indices (no Vector3 here, just indices into Corners)
+    public static readonly int[,] EdgeToCorner = new int[,]
+    {
+        {0,1}, // 0
+        {1,2}, // 1
+        {2,3}, // 2
+        {3,0}, // 3
+        {4,5}, // 4
+        {5,6}, // 5
+        {6,7}, // 6
+        {7,4}, // 7
+        {0,4}, // 8
+        {1,5}, // 9
+        {2,6}, // 10
+        {3,7}  // 11
+    };
+
+    /*public static Vector3[,] Edges = new Vector3[12, 2] {
 
         { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) },  //0
         { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) },  //1
@@ -32,7 +48,7 @@ public static class MarchingTable
         { new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f) },  //10
         { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 1.0f, 1.0f) }   //11
 
-    };
+    };*/
 
     public static int[,] Triangles = new int[,] {
         //Respresents all the triangles in a given cube, stopping at -1. For instance, the first and last cubes in this table do not have any triangles because they consist of nothing but -1.

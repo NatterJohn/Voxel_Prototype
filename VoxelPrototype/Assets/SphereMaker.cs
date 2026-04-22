@@ -1,256 +1,198 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [RequireComponent(typeof(MeshRenderer))]
 public class SphereMaker : MonoBehaviour
 {
+    //This material will be applied to the voxels
     public Material sphereMaterial;
-    GameObject marchCube;
-    
-    //[SerializeField] bool behindTheScenes = false;
-    float radiusSphere = 6;
-    /// <summary>
-    /// This is the width in units of all the voxels
-    /// </summary>
-    float gridWidthActual = 15;
-    /// <summary>
-    /// The number of voxels in a gridWidthActual
-    /// </summary>
-    float voxelResolution = 25;
-    //[SerializeField] int gridWidth;
-    //[SerializeField] int gridHeight;
-    private float heightTreshold = 0.5f;
-    private float[,,] gridPoints;
-    
-    Vector3 centreSphere = Vector3.zero;
-    private List<Vector3> vertices = new List<Vector3>();
-    private List<int> triangles = new List<int>();
+    //The size of the grid the voxels appear in. If voxels are generated outside of this grid, they will be disabled.
+    float gridWidthActual = 15f;
+    //Number that can exist in the grid along each dimension of the grid
+    int voxelResolution = 25;
+    //Radius of the sphere to be generated
+    float radiusSphere = 6f;
+    //Center of the sphere
+    Vector3 sphereCenter = Vector3.zero;
+    //Displays the voxels instead of the marched sphere when enabled
+    public bool showVoxels = false;
+    //Displays the wirefram of the voxel grid when enabled
+    public bool showVoxelWireframe = false;
     private Mesh mesh;
-    public VoxelScript[,,] voxels;
-    int intIndex = 1;
+    private List<Vector3> vertices;
+    private List<int> triangles;
 
     void Start()
     {
-        /*radiusSphere = 8.5f;
-        gridWidth = 16;
-        gridHeight = 16;*/
-        
-        //GenerateVoxels(gridWidthActual,voxelResolution);
-        //CreateSphere(centreSphere, radiusSphere);
-        //MarchCubes();
-        
-        //SetMesh();
-        //CreateUnityGameObject();
-
+        //If the bool to show voxels is enabled, then display the voxels. Else, generated the marched sphere.
+        if (showVoxels)
+            ShowVoxels();
+        else
+            GenerateMesh();
     }
-    private void Update()
+    void Update()
     {
-        if (Input.GetMouseButtonDown(0)) {
-            print("gameobject for index " + intIndex.ToString());
-            vertices = new List<Vector3>();
-            triangles = new List<int>();
-            testMarchCube(intIndex);
-            intIndex += 1;
-            SetMesh();
-            if (marchCube != null) { 
-                Destroy(marchCube);
-            }
-            marchCube = CreateUnityGameObject();
-        }   
-    }
-    private void SetMesh()
-    {
-        if (mesh == null)
-        {
-            mesh = new Mesh();
-        }
-
-        mesh.Clear();
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(triangles, 0);
+        /*if (showVoxels)
+            ShowVoxels();
+        else
+            GenerateMesh();*/
     }
 
-    private void GenerateVoxels(float gridWidthActual, float voxelResolution)
+    void GenerateMesh()
     {
+        vertices = new List<Vector3>();
+        triangles = new List<int>();
+        //The size of each voxel is calculated by dividing the width of the voxel grid (gridWidthActual) by the resolution (voxelResolution)
         float voxelWidth = gridWidthActual / voxelResolution;
-        voxels = new VoxelScript[(int)voxelResolution + 2, (int)voxelResolution + 2, (int)voxelResolution + 2];
-        
-
-        for (int ix = 0; ix < voxelResolution; ix++)
-            for (int iy = 0; iy < voxelResolution; iy++)
-                for (int iz = 0; iz < voxelResolution; iz++)
-                { 
-                    Vector3 voxelPosition = voxelPositionFromIndex(ix, iy, iz);
-                    GameObject newVoxel = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    Collider col =newVoxel.GetComponent<Collider>();
-                    Destroy(col);
-                    newVoxel.transform.localScale = voxelWidth * Vector3.one;
-                    Renderer renderer = newVoxel.GetComponent<Renderer>();
-                    renderer.material = sphereMaterial;
-                    VoxelScript voxel = newVoxel.AddComponent<VoxelScript>();
-                    voxel.SetPosition(voxelPosition);
-                    voxel.SetActive(true);
-                    voxels[ix,iy,iz] = voxel;
-                }
-    }
-
-    private Vector3 voxelPositionFromIndex(int ix, int iy, int iz)
-    {
-        float voxelWidth = gridWidthActual / voxelResolution;
-        return new Vector3( -(gridWidthActual - 1f)/2f + ((float) ix * voxelWidth), -(gridWidthActual - 1f) / 2f + ((float)iy * voxelWidth), -(gridWidthActual - 1f) / 2f + ((float)iz * voxelWidth) );
-    }
-
-    void CreateSphere(Vector3 pos, float radius)
-    {
-        // Loop through each possible voxel position
-        for (int x = 0; x < voxelResolution; x++)
+        //The center of the grid is calculated by halfing the total width
+        float gridCenter = gridWidthActual * 0.5f;
+        //All the voxels are looped through
+        for (int x = 0; x < voxelResolution - 1; x++)
         {
-            for (int y = 0; y < voxelResolution; y++)
+            for (int y = 0; y < voxelResolution - 1; y++)
             {
-                for (int z = 0; z < voxelResolution; z++)
+                for (int z = 0; z < voxelResolution - 1; z++)
                 {
-                    VoxelScript voxel = voxels[x, y, z];
-                    if (voxel == null) continue;
+                    //Calculate the position of the voxel
+                    Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
+                    //Determine which corners of the voxel are inside the sphere
+                    int configIndex = GetConfigIndex(voxelPosition, voxelWidth);
+                    //The first and last configurations are always empty
+                    if (configIndex == 0 || configIndex == 255)
+                        continue;
 
-                    // Check if the voxel position is inside the sphere radius
-                    float distance = Vector3.Distance(voxel.transform.position, pos);
-                    if (distance <= radius)
-                    {
-                        voxel.SetActive(true);
-                    }
-                    else
-                    {
-                        voxel.SetActive(false);
-                    }
+                    MarchCube(voxelPosition, voxelWidth, configIndex);
                 }
             }
         }
-    }
-    public GameObject CreateUnityGameObject()
-    {
-        // Create the GameObject
-        GameObject MarchedSphere = new GameObject("MarchingCubesMesh");
 
-        // Add components
-        MeshFilter meshFilter = MarchedSphere.AddComponent<MeshFilter>();
-        MeshRenderer meshRenderer = MarchedSphere.AddComponent<MeshRenderer>();
-
-        // Assign the mesh you built earlier
-        meshFilter.mesh = mesh;
-
-        // Assign material
-        meshRenderer.material = sphereMaterial;
-
-        // Optional: add collider
-        MeshCollider meshCollider = MarchedSphere.AddComponent<MeshCollider>();
-        meshCollider.sharedMesh = mesh;
-
-        return MarchedSphere;
+        BuildMesh();
     }
 
-
-    private void MarchCubes()
-    {
-        vertices.Clear();
-        triangles.Clear();
-
-        for (int x = 0; x < voxelResolution; x++)
-        {
-            for (int y = 0; y < voxelResolution; y++)
-            {
-                for (int z = 0; z < voxelResolution; z++)
-                {
-                    VoxelScript voxel = voxels[x, y, z];
-                    List<Vector3> cubeCorners = voxel.GetCorners();
-
-                    /*for (int i = 0; i < 8; i++)
-                    {
-                        Vector3Int corner = new Vector3Int(x, y, z) + MarchingTable.Corners[i];
-                    }*/
-
-                    MarchCube(new Vector3(x, y, z), cubeCorners);
-                }
-            }
-        }
-    }
-
-    private int GetConfigIndex(List<Vector3> cubeCorners)
+    int GetConfigIndex(Vector3 position, float size)
     {
         int configIndex = 0;
 
         for (int i = 0; i < 8; i++)
         {
-            if (Vector3.Distance(cubeCorners[i], centreSphere) < radiusSphere)
-            {
-                // Use bitwise OR to set the i-th bit to 1
+            //Calculate the position of the corner
+            Vector3 cornerPosition = position + (Vector3)MarchingTable.Corners[i] * size;
+            // Sphere implicit function: (p - center)^2 - r^2
+            float value = (cornerPosition - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
+
+            if (value < 0f)
+                //Use bitwise OR to set the i-th bit to 1
                 configIndex |= 1 << i;
-            }
-            
         }
 
         return configIndex;
     }
 
-    private void MarchCube(Vector3 position, List<Vector3> cubeCorners)
+    void MarchCube(Vector3 position, float size, int configIndex)
     {
-        int configIndex = GetConfigIndex(cubeCorners);
-
-        if (configIndex == 0 || configIndex == 255)
+        for (int i = 0; i < 16; i++)
         {
+            int edge = MarchingTable.Triangles[configIndex, i];
+            //If the edge is -1 then there are no more edges for this configuration
+            if (edge == -1)
+                return;
+            //Get the two corners that form this edge
+            int a = MarchingTable.EdgeToCorner[edge, 0];
+            int b = MarchingTable.EdgeToCorner[edge, 1];
+            //Calculate positions of corners
+            Vector3 p1 = position + (Vector3)MarchingTable.Corners[a] * size;
+            Vector3 p2 = position + (Vector3)MarchingTable.Corners[b] * size;
+
+            float v1 = (p1 - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
+            float v2 = (p2 - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
+
+            float t = v1 / (v1 - v2);
+            t = Mathf.Clamp01(t);
+
+            Vector3 v = Vector3.Lerp(p1, p2, t);
+
+            vertices.Add(v);
+            triangles.Add(vertices.Count - 1);
+        }
+    }
+
+    void BuildMesh()
+    {
+        mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateNormals();
+        //Create a GameObject to represent the marched cubes
+        GameObject marchedSphere = new GameObject("MarchedSphere");
+        marchedSphere.AddComponent<MeshFilter>().mesh = mesh;
+        marchedSphere.AddComponent<MeshRenderer>().material = sphereMaterial;
+    }
+
+    public void ShowVoxels()
+    {
+        //The size of each voxel is calculated by dividing the width of the voxel grid (gridWidthActual) by the resolution (voxelResolution)
+        float voxelWidth = gridWidthActual / voxelResolution;
+        //The center of the grid is calculated by halfing the total width
+        float gridCenter = gridWidthActual * 0.5f;
+        //All the voxels are looped through
+        for (int x = 0; x < voxelResolution - 1; x++)
+        {
+            for (int y = 0; y < voxelResolution - 1; y++)
+            {
+                for (int z = 0; z < voxelResolution - 1; z++)
+                {
+                    //Calculate the position of the voxel
+                    Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
+                    //Check if center of the voxel is within the sphere
+                    float value = (voxelPosition - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
+
+                    if (value < 0f)
+                    {
+                        //Create a cube primitive to display the voxel
+                        GameObject voxel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        voxel.transform.position = voxelPosition;
+                        voxel.transform.localScale = Vector3.one * voxelWidth;
+                        voxel.GetComponent<Renderer>().material = sphereMaterial;
+                    }
+                }
+            }
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        if (!showVoxelWireframe || !Application.isPlaying)
             return;
-        }
 
-        int edgeIndex = 0;
-        for (int t = 0; t < 5; t++)
+        Gizmos.color = Color.yellow;
+
+        //The size of each voxel is calculated by dividing the width of the voxel grid (gridWidthActual) by the resolution (voxelResolution)
+        float voxelWidth = gridWidthActual / voxelResolution;
+        //The center of the grid is calculated by halfing the total width
+        float gridCenter = gridWidthActual * 0.5f;
+        //All the voxels are looped through
+        for (int x = 0; x < voxelResolution - 1; x++)
         {
-            for (int v = 0; v < 3; v++)
+            for (int y = 0; y < voxelResolution - 1; y++)
             {
-                int triTableValue = MarchingTable.Triangles[configIndex, edgeIndex];
-
-                if (triTableValue == -1)
+                for (int z = 0; z < voxelResolution - 1; z++)
                 {
-                    return;
+                    //Calculate the position of the voxel
+                    Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
+
+                    Gizmos.DrawWireCube(voxelPosition, Vector3.one * voxelWidth);
                 }
-
-                Vector3 edgeStart = position + MarchingTable.Edges[triTableValue, 0];
-                Vector3 edgeEnd = position + MarchingTable.Edges[triTableValue, 1];
-
-                Vector3 vertex = (edgeStart + edgeEnd) / 2;
-
-                vertices.Add(vertex);
-                triangles.Add(vertices.Count - 1);
-
-                edgeIndex++;
             }
         }
     }
-    private void testMarchCube(int i)
-    {
-        int edgeIndex = 0;
-        for (int t = 0; t < 5; t++)
-        {
-            for (int v = 0; v < 3; v++)
-            {
-                int triTableValue = MarchingTable.Triangles[i, edgeIndex];
 
-                if (triTableValue == -1)
-                {
-                    return;
-                }
-
-                Vector3 edgeStart = MarchingTable.Edges[triTableValue, 0];
-                Vector3 edgeEnd = MarchingTable.Edges[triTableValue, 1];
-
-                Vector3 vertex = (edgeStart + edgeEnd) / 2;
-
-                vertices.Add(vertex);
-                triangles.Add(vertices.Count - 1);
-
-                edgeIndex++;
-            }
-        }
-    }
 }
+
+
+
+
+
