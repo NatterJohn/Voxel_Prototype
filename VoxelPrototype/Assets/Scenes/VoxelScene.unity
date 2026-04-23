@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sphereMaterial: {fileID: 2100000, guid: acb37e7646c47db42857d7378a1f5b35, type: 2}
-  showVoxels: 0
+  showVoxels: 1
   showVoxelWireframe: 0
 --- !u!23 &398283084
 MeshRenderer:
