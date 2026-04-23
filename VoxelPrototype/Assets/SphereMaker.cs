@@ -72,14 +72,14 @@ public class SphereMaker : MonoBehaviour
         BuildMesh();
     }
 
-    int GetConfigIndex(Vector3 position, float size)
+    int GetConfigIndex(Vector3 voxelPosition, float voxelWidth)
     {
         int configIndex = 0;
 
         for (int i = 0; i < 8; i++)
         {
             //Calculate the position of the corner
-            Vector3 cornerPosition = position + (Vector3)MarchingTable.Corners[i] * size;
+            Vector3 cornerPosition = voxelPosition + (Vector3)MarchingTable.Corners[i] * voxelWidth;
             // Sphere implicit function: (p - center)^2 - r^2
             float value = (cornerPosition - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
 
@@ -91,10 +91,12 @@ public class SphereMaker : MonoBehaviour
         return configIndex;
     }
 
-    void MarchCube(Vector3 position, float size, int configIndex)
+    void MarchCube(Vector3 voxelPosition, float voxelWidth, int configIndex)
     {
+        //Loop through all 15 triangle vertices allowed by the marching cube algorithm and -1
         for (int i = 0; i < 16; i++)
         {
+            //Look up which edge of the cube the triangle vertex is on
             int edge = MarchingTable.Triangles[configIndex, i];
             //If the edge is -1 then there are no more edges for this configuration
             if (edge == -1)
@@ -103,18 +105,20 @@ public class SphereMaker : MonoBehaviour
             int a = MarchingTable.EdgeToCorner[edge, 0];
             int b = MarchingTable.EdgeToCorner[edge, 1];
             //Calculate positions of corners
-            Vector3 p1 = position + (Vector3)MarchingTable.Corners[a] * size;
-            Vector3 p2 = position + (Vector3)MarchingTable.Corners[b] * size;
-
+            Vector3 p1 = voxelPosition + (Vector3)MarchingTable.Corners[a] * voxelWidth;
+            Vector3 p2 = voxelPosition + (Vector3)MarchingTable.Corners[b] * voxelWidth;
+            //Calculate how far each corner is from the sphere's surface
             float v1 = (p1 - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
             float v2 = (p2 - sphereCenter).sqrMagnitude - radiusSphere * radiusSphere;
-
+            //Calculate the interpolation factor where the surface crosses the edge.
             float t = v1 / (v1 - v2);
+            //Clamp to avoid the floating points being too large for flat edges.
             t = Mathf.Clamp01(t);
-
+            //Interpolate the two corners to get the exact surface for each edge.
             Vector3 v = Vector3.Lerp(p1, p2, t);
-
+            //Add the vertex to the list
             vertices.Add(v);
+            //Add the indices to form a triangle
             triangles.Add(vertices.Count - 1);
         }
     }
