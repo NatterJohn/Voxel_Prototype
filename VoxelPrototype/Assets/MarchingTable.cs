@@ -33,7 +33,7 @@ public static class MarchingTable
         {3,7}  // 11
     };
 
-    /*public static Vector3[,] Edges = new Vector3[12, 2] {
+    public static Vector3[,] Edges = new Vector3[12, 2] {
 
         { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) },  //0
         { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) },  //1
@@ -48,7 +48,7 @@ public static class MarchingTable
         { new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f) },  //10
         { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 1.0f, 1.0f) }   //11
 
-    };*/
+    };
 
     public static int[,] Triangles = new int[,] {
         //Respresents all the triangles in a given cube, stopping at -1. For instance, the first and last cubes in this table do not have any triangles because they consist of nothing but -1.

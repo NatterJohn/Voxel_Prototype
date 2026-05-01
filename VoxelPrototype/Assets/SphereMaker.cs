@@ -10,17 +10,17 @@ public class SphereMaker : MonoBehaviour
     //This material will be applied to the voxels
     public Material sphereMaterial;
     //The size of the grid the voxels appear in. If voxels are generated outside of this grid, they will be disabled.
-    float gridWidthActual = 15f;
+    public float gridWidthActual = 15f;
     //Number that can exist in the grid along each dimension of the grid
-    int voxelResolution = 25;
+    public int voxelResolution = 15;
     //Radius of the sphere to be generated
-    float radiusSphere = 6f;
+    public float radiusSphere = 6f;
     //Center of the sphere
     Vector3 sphereCenter = Vector3.zero;
     //Displays the voxels instead of the marched sphere when enabled
     public bool showVoxels = false;
     //Displays the wirefram of the voxel grid when enabled
-    public bool showVoxelWireframe = false;
+    public bool showIsosurfaces = false;
     private Mesh mesh;
     private List<Vector3> vertices;
     private List<int> triangles;
@@ -29,9 +29,9 @@ public class SphereMaker : MonoBehaviour
     {
         //If the bool to show voxels is enabled, then display the voxels. Else, generated the marched sphere.
         if (showVoxels)
-            ShowVoxels();
+            GenerateVoxels();
         else
-            GenerateMesh();
+            MarchCubes();
     }
     void Update()
     {
@@ -41,7 +41,7 @@ public class SphereMaker : MonoBehaviour
             GenerateMesh();*/
     }
 
-    void GenerateMesh()
+    void MarchCubes()
     {
         vertices = new List<Vector3>();
         triangles = new List<int>();
@@ -50,11 +50,11 @@ public class SphereMaker : MonoBehaviour
         //The center of the grid is calculated by halfing the total width
         float gridCenter = gridWidthActual * 0.5f;
         //All the voxels are looped through
-        for (int x = 0; x < voxelResolution - 1; x++)
+        for (int x = 0; x < voxelResolution; x++)
         {
-            for (int y = 0; y < voxelResolution - 1; y++)
+            for (int y = 0; y < voxelResolution; y++)
             {
-                for (int z = 0; z < voxelResolution - 1; z++)
+                for (int z = 0; z < voxelResolution; z++)
                 {
                     //Calculate the position of the voxel
                     Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
@@ -69,7 +69,7 @@ public class SphereMaker : MonoBehaviour
             }
         }
 
-        BuildMesh();
+        SetMesh();
     }
 
     int GetConfigIndex(Vector3 voxelPosition, float voxelWidth)
@@ -123,7 +123,7 @@ public class SphereMaker : MonoBehaviour
         }
     }
 
-    void BuildMesh()
+    void SetMesh()
     {
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
@@ -137,18 +137,18 @@ public class SphereMaker : MonoBehaviour
         marchedSphere.AddComponent<MeshRenderer>().material = sphereMaterial;
     }
 
-    public void ShowVoxels()
+    public void GenerateVoxels()
     {
         //The size of each voxel is calculated by dividing the width of the voxel grid (gridWidthActual) by the resolution (voxelResolution)
         float voxelWidth = gridWidthActual / voxelResolution;
         //The center of the grid is calculated by halfing the total width
         float gridCenter = gridWidthActual * 0.5f;
         //All the voxels are looped through
-        for (int x = 0; x < voxelResolution - 1; x++)
+        for (int x = 0; x < voxelResolution; x++)
         {
-            for (int y = 0; y < voxelResolution - 1; y++)
+            for (int y = 0; y < voxelResolution; y++)
             {
-                for (int z = 0; z < voxelResolution - 1; z++)
+                for (int z = 0; z < voxelResolution; z++)
                 {
                     //Calculate the position of the voxel
                     Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
@@ -159,6 +159,8 @@ public class SphereMaker : MonoBehaviour
                     {
                         //Create a cube primitive to display the voxel
                         GameObject voxel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        Collider col = voxel.GetComponent<Collider>();
+                        Destroy(col);
                         voxel.transform.position = voxelPosition;
                         voxel.transform.localScale = Vector3.one * voxelWidth;
                         voxel.GetComponent<Renderer>().material = sphereMaterial;
@@ -170,28 +172,25 @@ public class SphereMaker : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!showVoxelWireframe || !Application.isPlaying)
+        if (!showIsosurfaces || !Application.isPlaying || mesh == null)
             return;
 
-        Gizmos.color = Color.yellow;
+        Gizmos.color = Color.black;
 
-        //The size of each voxel is calculated by dividing the width of the voxel grid (gridWidthActual) by the resolution (voxelResolution)
-        float voxelWidth = gridWidthActual / voxelResolution;
-        //The center of the grid is calculated by halfing the total width
-        float gridCenter = gridWidthActual * 0.5f;
-        //All the voxels are looped through
-        for (int x = 0; x < voxelResolution - 1; x++)
+        // Get mesh data
+        var verts = mesh.vertices;
+        var tris = mesh.triangles;
+
+        // Draw each triangle edge
+        for (int i = 0; i < tris.Length; i += 3)
         {
-            for (int y = 0; y < voxelResolution - 1; y++)
-            {
-                for (int z = 0; z < voxelResolution - 1; z++)
-                {
-                    //Calculate the position of the voxel
-                    Vector3 voxelPosition = new Vector3(x * voxelWidth - gridCenter, y * voxelWidth - gridCenter, z * voxelWidth - gridCenter);
+            Vector3 a = verts[tris[i]];
+            Vector3 b = verts[tris[i + 1]];
+            Vector3 c = verts[tris[i + 2]];
 
-                    Gizmos.DrawWireCube(voxelPosition, Vector3.one * voxelWidth);
-                }
-            }
+            Gizmos.DrawLine(a, b);
+            Gizmos.DrawLine(b, c);
+            Gizmos.DrawLine(c, a);
         }
     }
 
